@@ -614,6 +614,8 @@ handle_event(Mod, Name, EventArgs, ElliArgs) ->
 %% allows easily adding time tracing wherever, without passing along
 %% any variables.
 t(Key) ->
+    put(req_start_time_milli, erlang:system_time(millisecond)),
+    put(req_start_time_micro, erlang:system_time(microsecond)),
     put({time, Key}, os:timestamp()).
 
 get_timings() ->
