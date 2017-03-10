@@ -67,7 +67,7 @@ keepalive_loop(Socket, NumRequests, Buffer, Options, Callback) ->
 %% socket. Returns the appropriate connection token and any buffer
 %% containing (parts of) the next request.
 handle_request(S, PrevB, Opts, {Mod, Args} = Callback) ->
-    {Method, RawPath, V, B0} = get_request(S, PrevB, Opts, Callback), t(request_start),
+    {Method, RawPath, V, B0} = get_request(S, PrevB, Opts, Callback), t(request_start), set_request_timing(),
     {RequestHeaders, B1} = get_headers(S, V, B0, Opts, Callback),     t(headers_end),
 
     Req = mk_req(Method, RawPath, RequestHeaders, <<>>, V, S, Callback),
@@ -613,9 +613,12 @@ handle_event(Mod, Name, EventArgs, ElliArgs) ->
 %% @doc: Record the current time in the process dictionary. This
 %% allows easily adding time tracing wherever, without passing along
 %% any variables.
-t(Key) ->
+
+set_request_timing() ->
     put(req_start_time_milli, erlang:system_time(millisecond)),
-    put(req_start_time_micro, erlang:system_time(microsecond)),
+    put(req_start_time_micro, erlang:system_time(microsecond)).
+
+t(Key) ->
     put({time, Key}, os:timestamp()).
 
 get_timings() ->
