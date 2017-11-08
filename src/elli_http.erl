@@ -619,7 +619,7 @@ set_request_timing() ->
     put(req_start_time_micro, erlang:system_time(microsecond)).
 
 t(Key) ->
-    put({time, Key}, os:timestamp()).
+    put({time, Key}, erlang:system_time(microsecond)).
 
 get_timings() ->
     lists:flatmap(fun ({{time, Key}, Val}) ->
