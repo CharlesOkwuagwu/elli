@@ -29,7 +29,7 @@ start_link(Server, ListenSocket, Options, Callback) ->
 %% request, then loops if we're using keep alive or chunked
 %% transfer. If accept doesn't give us a socket within a configurable
 %% timeout, we loop to allow code upgrades of this module.
-accept(Server, ListenSocket, Options, Callback) ->    
+accept(Server, ListenSocket, Options, Callback) ->
     case catch elli_tcp:accept(ListenSocket, Server, accept_timeout(Options)) of
         {ok, Socket} ->
             t(accepted),
@@ -66,8 +66,8 @@ keepalive_loop(Socket, NumRequests, Buffer, Options, Callback) ->
 %% socket. Returns the appropriate connection token and any buffer
 %% containing (parts of) the next request.
 handle_request(S, PrevB, Opts, {Mod, Args} = Callback) ->
-    set_request_timing(),
-    {Method, RawPath, V, B0} = get_request(S, PrevB, Opts, Callback), t(request_start), 
+    set_request_start(),
+    {Method, RawPath, V, B0} = get_request(S, PrevB, Opts, Callback), t(request_start),
     {RequestHeaders, B1} = get_headers(S, V, B0, Opts, Callback),     t(headers_end),
 
     Req = mk_req(Method, RawPath, RequestHeaders, <<>>, V, S, Callback),
@@ -91,6 +91,7 @@ handle_request(S, PrevB, Opts, {Mod, Args} = Callback) ->
 
             t(request_end),
             handle_event(Mod, request_complete, [Req1, handover, [], <<>>, get_timings()], Args),
+            set_request_stop(),
             Response
     end.
 
@@ -106,7 +107,6 @@ handle_response(Req, Buffer, {response, Code, UserHeaders, Body}) ->
     handle_event(Mod, request_complete, [Req, Code, Headers, Body, get_timings()], Args),
 
     {close_or_keepalive(Req, UserHeaders), Buffer};
-
 
 handle_response(Req, _Buffer, {chunk, UserHeaders, Initial}) ->
     #req{callback = {Mod, Args}} = Req,
@@ -614,9 +614,11 @@ handle_event(Mod, Name, EventArgs, ElliArgs) ->
 %% allows easily adding time tracing wherever, without passing along
 %% any variables.
 
-set_request_timing() ->
-    put(req_start_time_milli, erlang:system_time(millisecond)),
-    put(req_start_time_micro, erlang:system_time(microsecond)).
+set_request_start() ->
+    put(req_time_micro, erlang:system_time(microsecond)).
+
+set_request_stop() ->
+    put(req_time_micro, erlang:system_time(microsecond) - get(req_time_micro)).
 
 t(Key) ->
     put({time, Key}, erlang:system_time(microsecond)).
