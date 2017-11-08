@@ -29,8 +29,7 @@ start_link(Server, ListenSocket, Options, Callback) ->
 %% request, then loops if we're using keep alive or chunked
 %% transfer. If accept doesn't give us a socket within a configurable
 %% timeout, we loop to allow code upgrades of this module.
-accept(Server, ListenSocket, Options, Callback) ->
-    set_request_timing(),
+accept(Server, ListenSocket, Options, Callback) ->    
     case catch elli_tcp:accept(ListenSocket, Server, accept_timeout(Options)) of
         {ok, Socket} ->
             t(accepted),
@@ -67,6 +66,7 @@ keepalive_loop(Socket, NumRequests, Buffer, Options, Callback) ->
 %% socket. Returns the appropriate connection token and any buffer
 %% containing (parts of) the next request.
 handle_request(S, PrevB, Opts, {Mod, Args} = Callback) ->
+    set_request_timing(),
     {Method, RawPath, V, B0} = get_request(S, PrevB, Opts, Callback), t(request_start), 
     {RequestHeaders, B1} = get_headers(S, V, B0, Opts, Callback),     t(headers_end),
 
