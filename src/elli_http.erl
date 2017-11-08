@@ -65,9 +65,8 @@ keepalive_loop(Socket, NumRequests, Buffer, Options, Callback) ->
 %% @doc: Handle a HTTP request that will possibly come on the
 %% socket. Returns the appropriate connection token and any buffer
 %% containing (parts of) the next request.
-handle_request(S, PrevB, Opts, {Mod, Args} = Callback) ->
-    set_request_start(),
-    {Method, RawPath, V, B0} = get_request(S, PrevB, Opts, Callback), t(request_start),
+handle_request(S, PrevB, Opts, {Mod, Args} = Callback) ->    
+    {Method, RawPath, V, B0} = get_request(S, PrevB, Opts, Callback), t(request_start), set_request_start(),
     {RequestHeaders, B1} = get_headers(S, V, B0, Opts, Callback),     t(headers_end),
 
     Req = mk_req(Method, RawPath, RequestHeaders, <<>>, V, S, Callback),
@@ -90,8 +89,7 @@ handle_request(S, PrevB, Opts, {Mod, Args} = Callback) ->
             t(user_end),
 
             t(request_end),
-            handle_event(Mod, request_complete, [Req1, handover, [], <<>>, get_timings()], Args),
-            set_request_stop(),
+            handle_event(Mod, request_complete, [Req1, handover, [], <<>>, get_timings()], Args),            
             Response
     end.
 
@@ -616,9 +614,6 @@ handle_event(Mod, Name, EventArgs, ElliArgs) ->
 
 set_request_start() ->
     put(req_time_micro, erlang:system_time(microsecond)).
-
-set_request_stop() ->
-    put(req_time_micro, erlang:system_time(microsecond) - get(req_time_micro)).
 
 t(Key) ->
     put({time, Key}, erlang:system_time(microsecond)).
